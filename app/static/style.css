@@ -1,0 +1,1119 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #000000;
+    --primary-dark: #1a1a1a;
+    --secondary: #333333;
+    --success: #10b981;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --bg-main: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6c757d;
+    --border: #dee2e6;
+    --shadow: rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow: hidden;
+}
+
+/* App Container */
+.app-container {
+    display: flex;
+    height: 100vh;
+    max-width: 100vw;
+}
+
+/* Sidebar Layout */
+.sidebar {
+    width: 300px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+}
+
+/* Sidebar Branding (Match your new text logo) */
+.brand-name {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--primary);
+}
+
+.brand-name span {
+    font-weight: 300;
+    color: var(--text-secondary);
+}
+
+/* New Analysis Button */
+.sidebar-actions {
+    padding: 0 1rem 1.5rem 1rem;
+}
+
+.btn-new-chat {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.75rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-new-chat:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* History Section */
+.history-section {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-title {
+    padding: 0 1.5rem 0.75rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0.75rem;
+}
+
+/* History Items */
+.history-item {
+    position: relative;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.history-item:hover {
+    background: var(--bg-main);
+    border-color: var(--primary);
+    transform: translateX(4px);
+}
+
+.history-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.history-time {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.2rem;
+}
+
+.history-text {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.history-meta {
+    margin-top: 0.4rem;
+}
+
+.history-count {
+    font-size: 0.7rem;
+    color: var(--primary);
+    font-weight: 600;
+    background: rgba(0,0,0,0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Delete Button */
+.delete-btn {
+    opacity: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    padding: 0 5px;
+    cursor: pointer;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.history-item:hover .delete-btn {
+    opacity: 1;
+}
+
+.delete-btn:hover {
+    color: var(--error);
+}
+
+/* Scrollbar styling */
+.history-list::-webkit-scrollbar { width: 4px; }
+.history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+.empty-state svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+}
+
+/* Main Area */
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-main);
+    overflow: hidden;
+}
+
+.top-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo-icon {
+    font-size: 2rem;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.document-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-tertiary);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.document-badge svg {
+    color: var(--primary);
+}
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 0.3rem;
+    margin-left: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-close:hover {
+    background: var(--error);
+    color: white;
+}
+
+/* Content Wrapper */
+.content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Output Section */
+.output-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.output-section::-webkit-scrollbar {
+    width: 8px;
+}
+
+.output-section::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.output-section::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+/* Welcome Screen */
+.welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 2rem;
+}
+
+.welcome-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+.welcome-screen h2 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.welcome-screen p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chip:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+.chip svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Messages */
+.message {
+    display: flex;
+    margin-bottom: 1.5rem;
+}
+
+.message-content {
+    display: flex;
+    gap: 1rem;
+    max-width: 85%;
+}
+
+.user-message .message-content {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.user-avatar {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.ai-avatar {
+    background: var(--bg-tertiary);
+    font-size: 1.2rem;
+}
+
+.message-text {
+    background: var(--bg-secondary);
+    padding: 1rem 1.25rem;
+    border-radius: 18px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.user-message .message-text {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 0.5rem 0;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+/* Input Container */
+.input-container {
+    padding: 1rem 2rem;
+    background: var(--bg-main);
+    border-top: 1px solid var(--border);
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 28px;
+    padding: 0.5rem;
+    transition: border-color 0.2s;
+}
+
+.input-wrapper:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-upload {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-upload:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.query-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0.75rem 0.5rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.query-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.btn-send {
+    background: var(--primary);
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.btn-send:hover {
+    background: var(--primary-dark);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+.btn-send:active {
+    transform: scale(0.95);
+}
+
+.input-footer {
+    display: none;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    box-shadow: 0 8px 24px var(--shadow);
+    z-index: 1000;
+    animation: slideUp 0.3s ease;
+}
+/* Ensure streamed text preserves spaces and line breaks */
+/* Fix for the AI message container to allow streaming growth */
+.message.ai-message .message-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 85%; /* Prevent the bubble from stretching across the whole screen */
+}
+
+/* Ensure the text inside the bubble wraps and maintains formatting */
+.message-text {
+    background: #f0f2f5; /* Light grey for AI */
+    padding: 10px 15px;
+    border-radius: 15px;
+    border-top-left-radius: 2px;
+    line-height: 1.5;
+    white-space: pre-wrap; /* Keeps line breaks from the LLM */
+    word-wrap: break-word;
+    font-size: 15px;
+    color: #1a1a1a;
+    display: inline-block;
+}
+
+/* User message specific styling for contrast */
+.user-message .message-content {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.user-message .message-text {
+    background: #007bff; /* Blue for user */
+    color: white;
+    border-radius: 15px;
+    border-top-right-radius: 2px;
+    border-top-left-radius: 15px;
+}
+
+/* Typing "Cursor" effect for the active stream */
+.streaming-active .message-text::after {
+    content: '▋';
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 4px;
+    animation: blink 0.8s infinite;
+}
+/* Target the loading message specifically */
+#loadingMessage .message-text {
+    display: inline-flex; /* Shrink-wrap to content */
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;   /* Consistent but tighter padding */
+    min-height: 40px;     /* Prevents height jumping */
+    width: auto;          /* Overrides any 100% width defaults */
+    max-width: fit-content;
+}
+
+/* Ensure the typing indicator container doesn't stretch */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+}
+
+/* Fix for the dots animation spacing */
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #9ca3af;
+    border-radius: 50%;
+    display: inline-block;
+    animation: typing 1.4s infinite ease-in-out both;
+}
+.history-item {
+    position: relative; /* Needed for absolute positioning of delete btn */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.delete-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    padding: 0 8px;
+    cursor: pointer;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.history-item:hover .delete-btn {
+    opacity: 1; /* Show on hover */
+}
+
+.delete-btn:hover {
+    color: #ef4444; /* Turn red on hover */
+}
+
+/* --- Logo Enhancements --- */
+
+/* Main Header Logo */
+.main-app-logo {
+    height: 40px; /* Keep this height to match your header size */
+    width: auto;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+
+    /* This makes the image look 50% larger without 
+       changing the size of the .logo div */
+    transform: scale(1.5); 
+    
+    /* Optional: If scaling shifts the logo too much, 
+       adjust the origin to the left */
+    transform-origin: left center; 
+}
+.brand-name {
+    font-size: 1.6rem;
+    font-weight: 800; /* Extra bold for "Document" */
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, var(--primary) 0%, #4a4a4a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-name span {
+    font-weight: 300; /* Light weight for "Analyzer" to create contrast */
+    color: var(--text-secondary);
+    -webkit-text-fill-color: initial; /* Resets the gradient for the span */
+    margin-left: 2px;
+}
+
+/* Add a small accent dot for a "Tech" feel */
+.brand-name::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--success); /* Using your green success color as an accent */
+    border-radius: 50%;
+    margin-left: 8px;
+}
+
+/* Round Bot Avatar in Chat */
+.ai-avatar {
+    background: transparent !important; /* Remove the grey background */
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.ai-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%; /* Ensures it stays round */
+}
+
+/* Welcome Screen Logo */
+.welcome-logo-container {
+    margin-bottom: 1.5rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+.welcome-bot-logo {
+    width: 120px; /* Larger logo for the welcome screen */
+    height: 120px;
+    border-radius: 50%;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border: 4px solid var(--bg-secondary);
+}
+
+/* Sidebar History spacing fix */
+.sidebar-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Hide header by default */
+.top-header {
+    display: none; /* Changed from flex */
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+}
+
+/* Show header only when it has the active class */
+.top-header.active {
+    display: flex;
+}
+
+/* Ensure the document badge looks clean */
+.document-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-tertiary);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+@keyframes typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1.0); }
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+.toast.success {
+    border-color: var(--success);
+    background: var(--bg-secondary);
+}
+
+.toast.error {
+    border-color: var(--error);
+    background: var(--bg-secondary);
+}
+
+.toast.info {
+    border-color: var(--primary);
+    background: var(--bg-secondary);
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .sidebar {
+        position: fixed;
+        left: -320px;
+        height: 100vh;
+        z-index: 100;
+    }
+    
+    .sidebar.open {
+        transform: translateX(320px);
+    }
+    
+    .welcome-screen h2 {
+        font-size: 1.5rem;
+    }
+    
+    .suggestion-chips {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-header {
+        padding: 1rem;
+    }
+    
+    .logo h1 {
+        font-size: 1.2rem;
+    }
+    
+    .document-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .output-section {
+        padding: 1rem;
+    }
+    
+    .message-content {
+        max-width: 95%;
+    }
+    
+    .input-container {
+        padding: 1rem;
+    }
+}
+
+/* Styling for the internal thought process within the message */
+.message-text h3 {
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.message-text blockquote {
+    margin: 10px 0;
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.03);
+    border-left: 3px solid var(--text-secondary);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.message-text hr {
+    border: 0;
+    border-top: 1px dashed var(--border);
+    margin: 15px 0;
+}
+
+.thinking-dropdown summary {
+    list-style: none;
+    padding: 5px 10px;
+    background: var(--bg-tertiary);
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.thinking-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+
+.thinking-dropdown summary:hover {
+    background: var(--border);
+}
+
+.thinking-dropdown[open] summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: 0;
+}
+
+
+
+/* Document Pill (ChatGPT/Gemini style) - above input */
+.document-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0f0f0;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    padding: 6px 12px 6px 10px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: #333;
+    max-width: fit-content;
+    transition: all 0.2s ease;
+}
+
+.document-pill:hover {
+    background: #e8e8e8;
+    border-color: #d0d0d0;
+}
+
+.document-pill svg {
+    flex-shrink: 0;
+    color: #666;
+}
+
+.document-pill span {
+    font-weight: 500;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pill-close {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    margin-left: 4px;
+}
+
+.pill-close:hover {
+    background: #ddd;
+    color: #333;
+}
+
+/* Input container with pill */
+.input-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+    background: white;
+    border-top: 1px solid #e5e5e5;
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 24px;
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+}
+
+.input-wrapper:focus-within {
+    border-color: #4a90e2;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+/* Make sure query input takes full width */
+.query-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.95rem;
+    padding: 6px 8px;
+    color: #333;
+}
+
+.query-input::placeholder {
+    color: #999;
+}
+
+/* Button styles */
+.btn-upload,
+.btn-send {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-upload {
+    color: #666;
+}
+
+.btn-upload:hover {
+    background: #e8e8e8;
+    color: #333;
+}
+
+.btn-send {
+    background: #4a90e2;
+    color: white;
+}
+
+.btn-send:hover {
+    background: #357abd;
+    transform: scale(1.05);
+}
+
+.btn-send:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .document-pill span {
+        max-width: 200px;
+    }
+}
+
+.message-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.message-attachment {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.15); /* Slightly transparent on user bubble */
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: fit-content;
+    color: white;
+}
+
+.message-attachment svg {
+    opacity: 0.8;
+}
+
+/* Container for the AI response text */
+.main-answer {
+    display: block;
+    width: 100%;
+}
+
+/* Style the lists generated by Markdown */
+.main-answer ul, 
+.main-answer ol {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-left: 1.5rem; /* Sufficient space for dots */
+    list-style-position: outside; /* Keeps text aligned even if it wraps */
+}
+
+.main-answer li {
+    margin-bottom: 6px; /* Space between list items */
+    line-height: 1.5;
+}
+
+/* Fix for nested lists */
+.main-answer li > ul, 
+.main-answer li > ol {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+/* Make sure paragraphs inside bubbles have nice spacing */
+.main-answer p {
+    margin-bottom: 12px;
+}
+
+.main-answer p:last-child {
+    margin-bottom: 0;
+}
+.history-item.active {
+    background-color: #e8f0fe; /* Light blue background */
+    border-right: 4px solid #1a73e8; /* Blue accent line */
+}
+
+.history-item.active .history-text {
+    color: #1a73e8;
+    font-weight: 600;
+}

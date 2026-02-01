@@ -1,0 +1,6 @@
+flask 
+werkzeug
+langchain-ollama
+langgraph
+pdfplumber
+docx

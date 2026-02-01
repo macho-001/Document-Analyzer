@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Analysis Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-name">Doc<span>Analyzer</span></h1>
+            </div>
+        
+            <div class="sidebar-actions">
+                <button class="btn-new-chat" onclick="newChat()" title="Start New Analysis">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Analysis
+                </button>
+            </div>
+        
+            <div class="history-section">
+                <h3 class="section-title">Recent History</h3>
+                <div class="history-list" id="chatHistoryList">
+                    {% if chat_history %}
+                        {% for item in chat_history|reverse %}
+                        {% set original_index = loop.revindex0 %}
+                        <div class="history-item" onclick="loadConversation('{{ original_index }}')">
+                            <div class="history-content">
+                                <div class="history-time">{{ item.timestamp }}</div>
+                                <div class="history-text">
+                                    {% if item.title %}
+                                        {{ item.title }}
+                                    {% elif item.queries %}
+                                        {{ item.queries[0][:70] }}{{ '...' if item.queries[0]|length > 70 }}
+                                    {% else %}
+                                        New Chat
+                                    {% endif %}
+                                </div>
+                                <div class="history-meta">
+                                    <span class="history-count">{{ item.queries|length }} messages</span>
+                                </div>
+                            </div>
+                            <button class="delete-btn" onclick="deleteChat(event, '{{ original_index }}')">×</button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-area">
+            <!-- Content Area -->
+            <div class="content-wrapper">
+                <!-- Output Section -->
+                <div class="output-section" id="outputSection">
+                    {% if current_conversation and current_conversation.queries %}
+                        {% for i in range(current_conversation.queries|length) %}
+                            <!-- User Message -->
+                            <!-- <div class="message user-message">
+                                <div class="message-content">
+                                    <div class="message-avatar user-avatar">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    <div class="message-text">{{ current_conversation.queries[i] }}</div>
+                                </div>
+                            </div> -->
+                            <div class="message user-message">
+                                <div class="message-content">
+                                    <div class="message-avatar user-avatar">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <div class="message-text">{{ current_conversation.queries[i] }}</div>
+                                        
+                                        {# NEW: Check if there is an associated filename for this message #}
+                                        {% if current_conversation.filenames and current_conversation.filenames[i] %}
+                                        <div class="message-attachment" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.15); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.2); color: white; width: fit-content;">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
+                                            </svg>
+                                            <span>{{ current_conversation.filenames[i] }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- AI Response -->
+                            <div class="message ai-message">
+                                <div class="message-content">
+                                    <div class="message-avatar ai-avatar"><img src="static/images/logo-bot.png" alt="AI"></div>
+                                    <div class="message-text">{{ current_conversation.answers[i] }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="welcome-screen">
+                            <img src="static/images/logo-main.png" alt="Bot Logo" class="welcome-bot-logo">
+                            <h2>Welcome to Document Analyzer</h2>
+                            <p>Upload a document and start asking questions</p>
+                            
+                            <div class="suggestion-chips">
+                                <button class="chip" onclick="setQuickQuery('format')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 11 12 14 22 4"></polyline>
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                    </svg>
+                                    Check Format
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('overview')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                    Find Overview
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('diagrams')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                                    </svg>
+                                    Find Diagrams
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('summarize')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    Summarize
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Loading Animation -->
+                    <div class="message ai-message hidden" id="loadingMessage">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar"><img src="static/images/logo-bot.png" alt="AI"></div>
+                            <div class="message-text">
+                                <div class="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Container with Document Badge -->
+                <div class="input-container">
+                    <!-- Document Badge Above Input (ChatGPT/Gemini style) -->
+                    {% if document_info %}
+                    <div class="document-pill" id="documentPill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                            <polyline points="13 2 13 9 20 9"></polyline>
+                        </svg>
+                        <span id="pillFileName">{{ document_info.filename }}</span>
+                        <button class="pill-close" onclick="clearDocument()" title="Remove document">×</button>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="input-wrapper">
+                        <!-- File Upload Button -->
+                        <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="Upload document">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                            </svg>
+                        </button>
+                        <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" onchange="uploadFile()" style="display: none;">
+                        
+                        <!-- Text Input -->
+                        <input 
+                            type="text" 
+                            id="queryInput" 
+                            class="query-input" 
+                            placeholder="Ask anything about your document..."
+                            onkeypress="handleKeyPress(event)"
+                        >
+                        
+                        <!-- Send Button -->
+                        <button class="btn-send" onclick="analyzeDocument()" title="Send message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="19" x2="12" y2="5"></line>
+                                <polyline points="5 12 12 5 19 12"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast hidden" id="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        let currentQuery = '';
+        let currentConversationIndex = null;
+        let isDocumentLoaded = false;
+
+        // Upload file and show pill
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            showToast('Uploading document...', 'info');
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'error');
+                } else {
+                    showToast('Document uploaded successfully!', 'success');
+                    isDocumentLoaded = true;
+                    // Show document pill dynamically
+                    showDocumentPill(data.document_info.filename);
+                }
+            })
+            .catch(error => {
+                showToast('Upload failed', 'error');
+            });
+        }
+
+        // Show document pill above input
+        function showDocumentPill(filename) {
+            const inputContainer = document.querySelector('.input-container');
+            
+            // Remove existing pill if any
+            const existingPill = document.getElementById('documentPill');
+            if (existingPill) {
+                existingPill.remove();
+            }
+            
+            // Create new pill
+            const pill = document.createElement('div');
+            pill.className = 'document-pill';
+            pill.id = 'documentPill';
+            pill.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                </svg>
+                <span id="pillFileName">${filename}</span>
+                <button class="pill-close" onclick="clearDocument()" title="Remove document">×</button>
+            `;
+            
+            // Insert before input-wrapper
+            inputContainer.insertBefore(pill, inputContainer.querySelector('.input-wrapper'));
+        }
+
+        // Clear document
+        function clearDocument() {
+            if (confirm('Remove the current document?')) {
+                fetch('/clear-document', {
+                    method: 'POST'
+                })
+                .then(() => {
+                    // Remove pill from UI
+                    const pill = document.getElementById('documentPill');
+                    if (pill) {
+                        pill.remove();
+                    }
+                    showToast('Document removed', 'success');
+                });
+            }
+        }
+
+        // [Rest of your existing JavaScript code - analyzeDocument, saveConversation, etc.]
+        async function analyzeDocument() {
+            const queryInput = document.getElementById('queryInput');
+            const query = queryInput.value.trim();
+            const pill = document.getElementById('documentPill');
+            
+            
+
+            if (!query) {
+                showToast('Please enter a query', 'error');
+                return;
+            }
+            if (!isDocumentLoaded) {
+                showToast('Please upload a document first', 'error');
+                return; 
+            }
+            // --- NEW LOGIC: Clear the document pill from UI when sending ---
+            
+            const attachedFileName = pill ? document.getElementById('pillFileName').textContent : null;
+
+            // 2. Remove pill from UI (keeps it in server memory)
+            if (pill) pill.remove();
+            currentQuery = query;
+            
+            queryInput.value = '';
+            addUserMessage(query,attachedFileName);
+
+            const outputSection = document.getElementById('outputSection');
+            const loadingMsg = document.getElementById('loadingMessage');
+            loadingMsg.classList.add('hidden');
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai-message';
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar ai-avatar">
+                        <img src="/static/images/logo-bot.png" alt="AI">
+                    </div>
+                    <div class="message-container" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <details class="thinking-dropdown" style="display: none; width: 100%;">
+                            <summary style="cursor: pointer; font-size: 0.85rem; color: #666; margin-bottom: 5px;">
+                                Check Reasoning Process
+                            </summary>
+                            <div class="thought-content" style="font-size: 0.85rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 3px solid #ddd; white-space: pre-wrap; margin-bottom: 10px;"></div>
+                        </details>
+                        <div class="message-text main-answer"></div>
+                    </div>
+                </div>
+            `;
+
+            outputSection.insertBefore(messageDiv, loadingMsg);
+
+            const thoughtDetails = messageDiv.querySelector('.thinking-dropdown');
+            const thoughtContainer = messageDiv.querySelector('.thought-content');
+            const answerContainer = messageDiv.querySelector('.main-answer');
+
+            let fullAnswer = "";
+
+            try {
+                const response = await fetch('/analyze-stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        conversation_index: currentConversationIndex
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = JSON.parse(line.slice(6));
+
+                            if (data.type === 'token') {
+                                let content = data.content;
+
+                                const isJsonLeak = (
+                                    content.includes('"reasoning"') ||
+                                    content.includes('"goal"') ||
+                                    content.includes('"plan"') ||
+                                    content.includes('"action"') ||
+                                    content.includes('"tool"') ||
+                                    (content.trim().startsWith('{') && content.includes(':'))
+                                );
+
+                                if (content.startsWith("THOUGHT:") || isJsonLeak) {
+                                    thoughtDetails.style.display = 'block';
+                                    const thoughtText = content.replace("THOUGHT:", "");
+                                    let rawThoughts = thoughtContainer.getAttribute('data-raw') || "";
+                                    
+                                    if (isJsonLeak && !content.startsWith("THOUGHT:")) {
+                                        rawThoughts += `\n\`\`\`json\n${thoughtText}\n\`\`\`\n`;
+                                    } else {
+                                        rawThoughts += thoughtText;
+                                    }
+                                    
+                                    thoughtContainer.setAttribute('data-raw', rawThoughts);
+                                    thoughtContainer.innerHTML = marked.parse(rawThoughts);
+                                } 
+                                else if (content.startsWith("ANSWER:")) {
+                                    const answerText = content.replace("ANSWER:", "");
+                                    fullAnswer += answerText;
+                                    answerContainer.innerHTML = marked.parse(fullAnswer);
+                                }
+                                else {
+                                    fullAnswer += content;
+                                    answerContainer.innerHTML = marked.parse(fullAnswer);
+                                }
+
+                                outputSection.scrollTop = outputSection.scrollHeight;
+                            }
+                            else if (data.type === 'done') {
+                                saveConversation(query, fullAnswer);
+                            }
+                            else if (data.type === 'error') {
+                                showToast(data.message, 'error');
+                                messageDiv.remove();
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Streaming error:', error);
+                showToast('Connection lost', 'error');
+            }
+        }
+
+        function saveConversation(query, answer) {
+            fetch('/save-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: query,
+                    answer: answer,
+                    conversation_index: currentConversationIndex 
+                })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    if (res.status === 400 && currentConversationIndex !== null) {
+                        console.warn("Index out of sync. Saving as new conversation.");
+                        currentConversationIndex = null; 
+                        saveConversation(query, answer); 
+                    }
+                    throw new Error('Server returned ' + res.status);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    currentConversationIndex = data.conversation_index;
+                    renderSidebarItems(data.all_conversations);
+                }
+            })
+            .catch(err => console.error("Save Error:", err));
+        }
+
+        function renderSidebarItems(conversations) {
+            const list = document.getElementById('chatHistoryList');
+            if (!list) return;
+
+            if (!conversations || conversations.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <p>No conversations yet</p>
+                    </div>`;
+                return;
+            }
+
+            const reversedHistory = [...conversations].reverse();
+
+            list.innerHTML = reversedHistory.map((item, revIdx) => {
+                const originalIdx = conversations.length - 1 - revIdx;
+                const isActive = (parseInt(originalIdx) === parseInt(currentConversationIndex));
+                
+                let displayTitle = "New Chat";
+                if (item.title) {
+                    displayTitle = item.title;
+                } else if (item.queries && item.queries.length > 0) {
+                    displayTitle = item.queries[0].substring(0, 50) + (item.queries[0].length > 50 ? '...' : '');
+                }
+
+                return `
+                    <div class="history-item ${isActive ? 'active' : ''}" onclick="loadConversation('${originalIdx}')">
+                        <div class="history-content">
+                            <div class="history-time">${item.timestamp}</div>
+                            <div class="history-text" title="${displayTitle}">${displayTitle}</div>
+                            <div class="history-meta">
+                                <span class="history-count">${item.queries.length} messages</span>
+                            </div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteChat(event, '${originalIdx}')">×</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // async function deleteChat(event, index) {
+        //     event.stopPropagation();
+
+        //     if (!confirm("Are you sure you want to delete this conversation?")) return;
+
+        //     try {
+        //         const response = await fetch('/delete-conversation', {
+        //             method: 'POST',
+        //             headers: { 'Content-Type': 'application/json' },
+        //             body: JSON.stringify({ index: index })
+        //         });
+
+        //         const data = await response.json();
+
+        //         if (data.success) {
+        //             if (index === currentConversationIndex) {
+        //                 currentConversationIndex = null;
+        //                 document.getElementById('outputSection').innerHTML = '';
+        //             } else if (index < currentConversationIndex) {
+        //                 currentConversationIndex--;
+        //             }
+                    
+        //             renderSidebarItems(data.all_conversations);
+        //         }
+        //     } catch (error) {
+        //         console.error("Delete failed:", error);
+        //     }
+        // }
+        async function deleteChat(event, index) {
+            event.stopPropagation();
+
+            if (!confirm("Are you sure you want to delete this conversation?")) return;
+
+            try {
+                const response = await fetch('/delete-conversation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index: index })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Check if we are deleting the chat that is currently open
+                    if (parseInt(index) === parseInt(currentConversationIndex)) {
+                        currentConversationIndex = null;
+                        
+                        // Instead of just clearing, restore the Welcome Screen
+                        const outputSection = document.getElementById('outputSection');
+                        outputSection.innerHTML = `
+                            <div class="welcome-screen">
+                                <img src="static/images/logo-main.png" alt="Bot Logo" class="welcome-bot-logo">
+                                <h2>Welcome to Document Analyzer</h2>
+                                <p>Upload a document and start asking questions</p>
+                                
+                                <div class="suggestion-chips">
+                                    <button class="chip" onclick="setQuickQuery('format')">Check Format</button>
+                                    <button class="chip" onclick="setQuickQuery('overview')">Find Overview</button>
+                                    <button class="chip" onclick="setQuickQuery('diagrams')">Find Diagrams</button>
+                                    <button class="chip" onclick="setQuickQuery('summarize')">Summarize</button>
+                                </div>
+                            </div>
+                            
+                            <div class="message ai-message hidden" id="loadingMessage">
+                                <div class="message-content">
+                                    <div class="message-avatar ai-avatar"><img src="static/images/logo-bot.png" alt="AI"></div>
+                                    <div class="message-text">
+                                        <div class="typing-indicator"><span></span><span></span><span></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Also clean up the URL without refreshing (optional)
+                        window.history.pushState({}, '', '/');
+                    } else if (index < currentConversationIndex) {
+                        currentConversationIndex--;
+                    }
+                    
+                    renderSidebarItems(data.all_conversations);
+                }
+            } catch (error) {
+                console.error("Delete failed:", error);
+            }
+        }
+
+        // function addUserMessage(text) {
+        //     const outputSection = document.getElementById('outputSection');
+        //     const welcomeScreen = outputSection.querySelector('.welcome-screen');
+        //     if (welcomeScreen) {
+        //         welcomeScreen.remove();
+        //     }
+            
+        //     const loadingMsg = document.getElementById('loadingMessage');
+        //     loadingMsg.remove();
+            
+        //     const messageDiv = document.createElement('div');
+        //     messageDiv.className = 'message user-message';
+        //     messageDiv.innerHTML = `
+        //         <div class="message-content">
+        //             <div class="message-avatar user-avatar">
+        //                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        //                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        //                     <circle cx="12" cy="7" r="4"></circle>
+        //                 </svg>
+        //             </div>
+        //             <div class="message-text">${escapeHtml(text)}</div>
+        //         </div>
+        //     `;
+            
+        //     outputSection.appendChild(messageDiv);
+        //     outputSection.appendChild(loadingMsg);
+        //     outputSection.scrollTop = outputSection.scrollHeight;
+        // }
+
+        function addUserMessage(text, fileName = null) {
+            const outputSection = document.getElementById('outputSection');
+            
+            // Cleanup placeholders
+            const welcomeScreen = outputSection.querySelector('.welcome-screen');
+            if (welcomeScreen) welcomeScreen.remove();
+            
+            const loadingMsg = document.getElementById('loadingMessage');
+            if (loadingMsg) loadingMsg.remove();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user-message';
+            
+            // Create the badge only if a filename exists
+            const attachmentHtml = fileName ? `
+                <div class="message-attachment" style="
+                    display: inline-flex; 
+                    align-items: center; 
+                    gap: 6px; 
+                    background: #f0f4f9; /* Light grey/blue background */
+                    padding: 6px 10px; 
+                    border-radius: 8px; 
+                    font-size: 0.8rem; 
+                    margin-top: 8px;
+                    border: 1px solid #d1d9e0;
+                    color: #444; /* Darker text for visibility */
+                    width: fit-content;
+                    line-height: 1;
+                ">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+                        ${fileName}
+                    </span>
+                </div>
+            ` : '';
+
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar user-avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="user-message-body" style="display: flex; flex-direction: column; align-items: flex-start;">
+                        <div class="message-text" style="width: 100%;">${escapeHtml(text)}</div>
+                        ${attachmentHtml}
+                    </div>
+                </div>
+            `;
+            
+            outputSection.appendChild(messageDiv);
+            outputSection.appendChild(loadingMsg);
+            outputSection.scrollTop = outputSection.scrollHeight;
+        }
+
+        function setQuickQuery(type) {
+            fetch('/quick-query/' + type, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('queryInput').value = data.query;
+                document.getElementById('queryInput').focus();
+            });
+        }
+
+        // function loadConversation(index) {
+        //     window.location.href = '/?conversation=' + index;
+        // }
+        function loadConversation(index) {
+            currentConversationIndex = index;
+            window.location.href = '/?conversation=' + index;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                analyzeDocument();
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // function newChat() {
+        //     window.location.href = '/';
+        //     isDocumentLoaded=false;
+        // }
+        async function newChat() {
+    // 1. Tell the server to delete the file and clear the session info
+    try {
+        await fetch('/clear-document', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (e) {
+        console.error("Failed to clear document on server:", e);
+    }
+
+    // 2. Reset the local flag
+    isDocumentLoaded = false;
+    currentConversationIndex = null;
+
+    // 3. Redirect to home (this will now load without the pill because the session is clear)
+    window.history.pushState({}, '', '/');
+    // Call a function that renders the welcome screen (you could move the HTML string above into a helper function)
+    location.reload();
+}
+
+        window.addEventListener('load', () => {
+            const outputSection = document.getElementById('outputSection');
+            if (outputSection) {
+                outputSection.scrollTop = outputSection.scrollHeight;
+            }
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const convIndex = urlParams.get('conversation');
+            if (convIndex !== null) {
+                currentConversationIndex = parseInt(convIndex);
+            }
+        });
+
+        // Run this when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const conversationId = urlParams.get('conversation');
+    
+    if (conversationId !== null) {
+        currentConversationIndex = conversationId;
+        highlightActiveSidebarItem(conversationId);
+    }
+});
+
+function highlightActiveSidebarItem(index) {
+    // Remove active class from all items
+    document.querySelectorAll('.history-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // We use a broader check because the index in the DOM might be reverse-ordered
+    // It's safest to find the item that has the onclick matching our index
+    const allItems = document.querySelectorAll('.history-item');
+    allItems.forEach(item => {
+        if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(`'${index}'`)) {
+            item.classList.add('active');
+        }
+    });
+}
+    </script>
+</body>
+</html>

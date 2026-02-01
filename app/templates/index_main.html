@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Analysis Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-name">Doc<span>Analyzer</span></h1>
+            </div>
+        
+            <div class="sidebar-actions">
+                <button class="btn-new-chat" onclick="newChat()" title="Start New Analysis">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Analysis
+                </button>
+            </div>
+        
+            <div class="history-section">
+                <h3 class="section-title">Recent History</h3>
+                <div class="history-list" id="chatHistoryList">
+                    {% if chat_history %}
+                        {% for item in chat_history|reverse %}
+                        {% set original_index = loop.revindex0 %}
+                        <div class="history-item" onclick="loadConversation('{{ original_index }}')">
+                            <div class="history-content">
+                                <div class="history-time">{{ item.timestamp }}</div>
+                                <div class="history-text">
+                                    {# PRIORITY: Title > First Query > Placeholder #}
+                                    {% if item.title %}
+                                        {{ item.title }}
+                                    {% elif item.queries %}
+                                        {{ item.queries[0][:70] }}{{ '...' if item.queries[0]|length > 70 }}
+                                    {% else %}
+                                        New Chat
+                                    {% endif %}
+                                </div>
+                                <div class="history-meta">
+                                    <span class="history-count">{{ item.queries|length }} messages</span>
+                                </div>
+                            </div>
+                            <button class="delete-btn" onclick="deleteChat(event, '{{ original_index }}')">×</button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-area">
+            <!-- Header -->
+            <!-- <header class="top-header">
+                
+                
+                {% if document_info %}
+                <div class="document-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                    <span>{{ document_info.filename }}</span>
+                    <button class="btn-close" onclick="clearDocument()" title="Remove document">×</button>
+                </div>
+                {% endif %}
+            </header> -->
+            <header class="top-header {{ 'active' if document_info else '' }}" id="mainHeader">
+                {% if document_info %}
+                <div class="document-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                    <span id="currentFileName">{{ document_info.filename }}</span>
+                    <button class="btn-close" onclick="clearDocument()" title="Remove document">×</button>
+                </div>
+                {% endif %}
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-wrapper">
+                <!-- Output Section -->
+                <div class="output-section" id="outputSection">
+                    {% if current_conversation and current_conversation.queries %}
+                        {% for i in range(current_conversation.queries|length) %}
+                            <!-- User Message -->
+                            <div class="message user-message">
+                                <div class="message-content">
+                                    <div class="message-avatar user-avatar">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    <div class="message-text">{{ current_conversation.queries[i] }}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- AI Response -->
+                            <div class="message ai-message">
+                                <div class="message-content">
+                                    <div class="message-avatar ai-avatar"><img src="static/images/logo-bot.png" alt="AI"></div>
+                                    <div class="message-text">{{ current_conversation.answers[i] }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="welcome-screen">
+                            <img src="static/images/logo-main.png" alt="Bot Logo" class="welcome-bot-logo">
+                            <h2>Welcome to Document Analyzer</h2>
+                            <p>Upload a document and start asking questions</p>
+                            
+                            <div class="suggestion-chips">
+                                <button class="chip" onclick="setQuickQuery('format')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 11 12 14 22 4"></polyline>
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                    </svg>
+                                    Check Format
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('overview')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                    Find Overview
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('diagrams')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                                    </svg>
+                                    Find Diagrams
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('summarize')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    Summarize
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Loading Animation (will be moved by JS) -->
+                    <div class="message ai-message hidden" id="loadingMessage">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar"><img src="static/images/logo-bot.png" alt="AI"></div>
+                            <div class="message-text">
+                                <div class="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Container -->
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <!-- File Upload Button -->
+                        <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="Upload document">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                            </svg>
+                        </button>
+                        <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" onchange="uploadFile()" style="display: none;">
+                        
+                        <!-- Text Input -->
+                        <input 
+                            type="text" 
+                            id="queryInput" 
+                            class="query-input" 
+                            placeholder="Ask anything about your document..."
+                            onkeypress="handleKeyPress(event)"
+                        >
+                        
+                        <!-- Send Button -->
+                        <button class="btn-send" onclick="analyzeDocument()" title="Send message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="19" x2="12" y2="5"></line>
+                                <polyline points="5 12 12 5 19 12"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast hidden" id="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        let currentQuery = '';
+        let currentConversationIndex = null;
+        
+
+        // Upload file
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            showToast('Uploading document...', 'info');
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'error');
+                } else {
+                    showToast('Document uploaded successfully!', 'success');
+                    
+                    setTimeout(() => location.reload(), 500);
+                }
+            })
+            .catch(error => {
+                showToast('Upload failed', 'error');
+            });
+        }
+
+        // Analyze document with streaming
+         
+//         async function analyzeDocument() {
+
+// const queryInput = document.getElementById('queryInput');
+
+// const query = queryInput.value.trim();
+
+
+
+// if (!query) {
+
+//     showToast('Please enter a question', 'error');
+
+//     return;
+
+// }
+
+
+
+// currentQuery = query;
+
+// addUserMessage(query); // UI shows user query immediately
+
+// queryInput.value = ''; // Clear input
+
+
+
+// // Prepare the AI message bubble
+
+// const outputSection = document.getElementById('outputSection');
+
+// const loadingMsg = document.getElementById('loadingMessage');
+
+// loadingMsg.classList.add('hidden'); // We use our own streaming logic instead of the spinner
+
+
+
+// const messageDiv = document.createElement('div');
+
+// messageDiv.className = 'message ai-message';
+
+// // NEW HTML STRUCTURE: Includes a collapsible 'Thinking' section
+
+// messageDiv.innerHTML = `
+
+//     <div class="message-content">
+
+//         <div class="message-avatar ai-avatar"><img src="/static/images/logo-bot.png" alt="AI"></div>
+
+//         <div class="message-container" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+
+//             <details class="thinking-dropdown" style="display: none; width: 100%;">
+
+//                 <summary style="cursor: pointer; font-size: 0.85rem; color: #666; margin-bottom: 5px;">
+
+//                     Check Reasoning Process
+
+//                 </summary>
+
+//                 <div class="thought-content" style="font-size: 0.85rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 3px solid #ddd; white-space: pre-wrap; margin-bottom: 10px;"></div>
+
+//             </details>
+
+//             <div class="message-text main-answer"></div>
+
+//         </div>
+
+//     </div>
+
+// `;
+
+
+
+// outputSection.insertBefore(messageDiv, loadingMsg);
+
+
+
+// // Select both containers
+
+// const thoughtDetails = messageDiv.querySelector('.thinking-dropdown');
+
+// const thoughtContainer = messageDiv.querySelector('.thought-content');
+
+// const answerContainer = messageDiv.querySelector('.main-answer');
+
+
+
+// let fullAnswer = "";
+
+// let fullThoughts = "";
+
+
+
+// try {
+
+//     const response = await fetch('/analyze-stream', {
+
+//         method: 'POST',
+
+//         headers: {
+
+//             'Content-Type': 'application/json'
+
+//         },
+
+//         body: JSON.stringify({
+
+//             query: query,
+
+//             conversation_index: currentConversationIndex
+
+//         })
+
+//     });
+
+//     const reader = response.body.getReader();
+
+//     const decoder = new TextDecoder();
+
+
+
+//     while (true) {
+
+//         const { done, value } = await reader.read();
+
+//         if (done) break;
+
+
+
+//         const chunk = decoder.decode(value);
+
+//         const lines = chunk.split('\n\n');
+
+
+
+//         for (const line of lines) {
+
+//             if (line.startsWith('data: ')) {
+
+//                 const data = JSON.parse(line.slice(6));
+
+//                 let isThinking = false; // Track state outside the line loop
+
+//             // ... inside your while loop ...
+//             if (data.type === 'token') {
+//                 let content = data.content;
+
+//                 // 1. Check for explicit prefixes first
+//                 if (content.startsWith("THOUGHT:")) {
+//                     isThinking = true;
+//                     content = content.replace("THOUGHT:", "");
+//                 } else if (content.startsWith("ANSWER:")) {
+//                     isThinking = false;
+//                     content = content.replace("ANSWER:", "");
+//                 } 
+//                 // 2. Secondary check for raw JSON leaks
+//                 else if (content.includes('"goal":') || content.trim().startsWith('{')) {
+//                     isThinking = true;
+//                 }
+
+//                 // 3. Route content based on current state
+//                 if (isThinking) {
+//                     thoughtDetails.style.display = 'block';
+//                     let raw = thoughtContainer.getAttribute('data-raw') || "";
+//                     raw += content;
+//                     thoughtContainer.setAttribute('data-raw', raw);
+//                     thoughtContainer.innerHTML = marked.parse(raw);
+//                 } else {
+//                     fullAnswer += content;
+//                     answerContainer.innerHTML = marked.parse(fullAnswer);
+//                 }
+
+//                 outputSection.scrollTop = outputSection.scrollHeight;
+//             }
+//                 else if (data.type === 'done') {
+//                     // This uses the accumulated fullAnswer string
+//                     saveConversation(query, fullAnswer);
+// }
+
+//                 // if (data.type === 'token') {
+
+//                 //     let content = data.content;
+
+
+
+//                 //     // 1. SURGICAL JSON FILTER
+
+//                 //     // If the content looks like the Planning JSON, force it to THOUGHT
+
+//                 //     if (content.includes('"goal":') || (content.trim().startsWith('{') && content.includes('"plan":'))) {
+
+//                 //         thoughtDetails.style.display = 'block';
+
+//                 //         thoughtDetails.open = true;
+
+                       
+
+//                 //         // Format it nicely for the thought box
+
+//                 //         let rawThoughts = thoughtContainer.getAttribute('data-raw') || "";
+
+//                 //         rawThoughts += `\n### 📋 Automated Plan\n\`\`\`json\n${content.replace("ANSWER:", "").replace("THOUGHT:", "")}\n\`\`\`\n`;
+
+                       
+
+//                 //         thoughtContainer.setAttribute('data-raw', rawThoughts);
+
+//                 //         thoughtContainer.innerHTML = marked.parse(rawThoughts);
+
+//                 //     }
+
+//                 //     // 2. REGULAR THOUGHTS
+
+//                 //     else if (content.startsWith("THOUGHT:")) {
+
+//                 //         thoughtDetails.style.display = 'block';
+
+//                 //         const text = content.replace("THOUGHT:", "");
+
+//                 //         let raw = thoughtContainer.getAttribute('data-raw') || "";
+
+//                 //         raw += text;
+
+//                 //         thoughtContainer.setAttribute('data-raw', raw);
+
+//                 //         thoughtContainer.innerHTML = marked.parse(raw);
+
+//                 //     }
+
+//                 //     // 3. ACTUAL ANSWER
+
+//                 //     else if (content.startsWith("ANSWER:")) {
+
+//                 //         const text = content.replace("ANSWER:", "");
+
+//                 //         fullAnswer += text;
+
+//                 //         answerContainer.innerHTML = marked.parse(fullAnswer);
+
+//                 //     }
+
+//                 //     else {
+
+//                 //         // Fallback for raw text
+
+//                 //         fullAnswer += content;
+
+//                 //         answerContainer.innerHTML = marked.parse(fullAnswer);
+
+//                 //     }
+
+                   
+
+//                 //     outputSection.scrollTop = outputSection.scrollHeight;
+
+//                 // }
+
+//                 // else if (data.type === 'done') {
+
+//                 //     saveConversation(query, fullAnswer);
+
+//                 // }
+
+
+
+// // messageDiv.innerHTML = `
+
+// //     <div class="message-content">
+
+// //         <div class="message-avatar ai-avatar"><img src="/static/images/logo-bot.png" alt="AI"></div>
+
+// //         <div class="message-text"></div>
+
+// //     </div>
+
+// // `;
+
+// // outputSection.insertBefore(messageDiv, loadingMsg);
+
+// // const textContainer = messageDiv.querySelector('.message-text');
+
+
+
+
+
+// // let fullAnswer = "";
+
+
+
+// // try {
+
+// //     const response = await fetch('/analyze-stream', {
+
+// //         method: 'POST',
+
+// //         headers: { 'Content-Type': 'application/json' },
+
+// //         body: JSON.stringify({
+
+// //             query: query,
+
+// //             conversation_index: currentConversationIndex
+
+// //         })
+
+// //     });
+
+
+
+// //     const reader = response.body.getReader();
+
+// //     const decoder = new TextDecoder();
+
+// //     while (true) {
+
+// //         const { done, value } = await reader.read();
+
+// //         if (done) break;
+
+
+
+// //         const chunk = decoder.decode(value);
+
+       
+
+// //         const lines = chunk.split('\n\n');
+
+
+
+// //         for (const line of lines) {
+
+// //             if (line.startsWith('data: ')) {
+
+// //                 const data = JSON.parse(line.slice(6));
+
+               
+
+
+
+// //                 if (data.type === 'token') {
+
+// //                     fullAnswer += data.content;
+
+                   
+
+// //                     // Use marked to convert the accumulated string into HTML
+
+// //                     textContainer.innerHTML = marked.parse(fullAnswer);
+
+                   
+
+// //                     outputSection.scrollTop = outputSection.scrollHeight;
+
+// //                 }
+
+// //                 else if (data.type === 'done') {
+
+// //                     // Once the stream finishes, we persist it to the backend session
+
+// //                     saveConversation(query, fullAnswer);
+
+// //                 }
+
+//                 else if (data.type === 'error') {
+
+//                     showToast(data.message, 'error');
+
+//                     messageDiv.remove();
+
+//                 }
+
+//             }
+
+//         }
+
+//     }
+
+// } catch (error) {
+
+//     console.error('Streaming error:', error);
+
+//     showToast('Connection lost', 'error');
+
+// }
+
+// }
+async function analyzeDocument() {
+    const queryInput = document.getElementById('queryInput');
+    const query = queryInput.value.trim();
+
+    if (!query) {
+        showToast('Please enter a question', 'error');
+        return;
+    }
+
+    currentQuery = query;
+    addUserMessage(query);
+    queryInput.value = '';
+
+    const outputSection = document.getElementById('outputSection');
+    const loadingMsg = document.getElementById('loadingMessage');
+    loadingMsg.classList.add('hidden');
+
+    // Create message structure with collapsible thinking section
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            <div class="message-avatar ai-avatar">
+                <img src="/static/images/logo-bot.png" alt="AI">
+            </div>
+            <div class="message-container" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                <details class="thinking-dropdown" style="display: none; width: 100%;">
+                    <summary style="cursor: pointer; font-size: 0.85rem; color: #666; margin-bottom: 5px;">
+                        Check Reasoning Process
+                    </summary>
+                    <div class="thought-content" style="font-size: 0.85rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 3px solid #ddd; white-space: pre-wrap; margin-bottom: 10px;"></div>
+                </details>
+                <div class="message-text main-answer"></div>
+            </div>
+        </div>
+    `;
+
+    outputSection.insertBefore(messageDiv, loadingMsg);
+
+    const thoughtDetails = messageDiv.querySelector('.thinking-dropdown');
+    const thoughtContainer = messageDiv.querySelector('.thought-content');
+    const answerContainer = messageDiv.querySelector('.main-answer');
+
+    let fullAnswer = "";
+
+    try {
+        const response = await fetch('/analyze-stream', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: query,
+                conversation_index: currentConversationIndex
+            })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.slice(6));
+
+                    if (data.type === 'token') {
+                        let content = data.content;
+
+                        // Double-check for JSON leaks (defense in depth)
+                        const isJsonLeak = (
+                            content.includes('"reasoning"') ||
+                            content.includes('"goal"') ||
+                            content.includes('"plan"') ||
+                            content.includes('"action"') ||
+                            content.includes('"tool"') ||
+                            (content.trim().startsWith('{') && content.includes(':'))
+                        );
+
+                        // Handle THOUGHT prefix or JSON leaks
+                        if (content.startsWith("THOUGHT:") || isJsonLeak) {
+                            thoughtDetails.style.display = 'block';
+                            
+                            // Extract content without prefix
+                            const thoughtText = content.replace("THOUGHT:", "");
+                            
+                            // Accumulate thoughts
+                            let rawThoughts = thoughtContainer.getAttribute('data-raw') || "";
+                            
+                            // Format JSON nicely if it's JSON
+                            if (isJsonLeak && !content.startsWith("THOUGHT:")) {
+                                rawThoughts += `\n\`\`\`json\n${thoughtText}\n\`\`\`\n`;
+                            } else {
+                                rawThoughts += thoughtText;
+                            }
+                            
+                            thoughtContainer.setAttribute('data-raw', rawThoughts);
+                            thoughtContainer.innerHTML = marked.parse(rawThoughts);
+                        } 
+                        // Handle ANSWER prefix
+                        else if (content.startsWith("ANSWER:")) {
+                            const answerText = content.replace("ANSWER:", "");
+                            fullAnswer += answerText;
+                            answerContainer.innerHTML = marked.parse(fullAnswer);
+                        }
+                        // Fallback for clean text
+                        else {
+                            fullAnswer += content;
+                            answerContainer.innerHTML = marked.parse(fullAnswer);
+                        }
+
+                        // Auto-scroll to bottom
+                        outputSection.scrollTop = outputSection.scrollHeight;
+                    }
+                    else if (data.type === 'done') {
+                        saveConversation(query, fullAnswer);
+                    }
+                    else if (data.type === 'error') {
+                        showToast(data.message, 'error');
+                        messageDiv.remove();
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Streaming error:', error);
+        showToast('Connection lost', 'error');
+    }
+}
+function saveConversation(query, answer) {
+    // If the index is something the server might not know about yet, 
+    // it's safer to let the server decide if it's new or existing.
+    fetch('/save-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            query: query,
+            answer: answer,
+            // Ensure we send null if it's not a valid number
+            conversation_index: currentConversationIndex 
+        })
+    })
+    .then(res => {
+        if (!res.ok) {
+            // If we get a 400, it means our index is out of sync.
+            // Let's try saving it as a NEW chat instead of losing the data.
+            if (res.status === 400 && currentConversationIndex !== null) {
+                console.warn("Index out of sync. Saving as new conversation.");
+                currentConversationIndex = null; 
+                saveConversation(query, answer); 
+            }
+            throw new Error('Server returned ' + res.status);
+        }
+        return res.json();
+    })
+    .then(data => {
+        if (data.success) {
+            currentConversationIndex = data.conversation_index;
+            renderSidebarItems(data.all_conversations);
+        }
+    })
+    .catch(err => console.error("Save Error:", err));
+}
+
+// function saveConversation(query, answer) {
+//     fetch('/save-chat', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({
+//             query: query,
+//             answer: answer,
+//             conversation_index: currentConversationIndex
+//         })
+//     })
+//     .then(res => res.json())
+//     .then(data => {
+//         if (data.success) {
+//             // 1. Update our pointer to the current chat
+//             currentConversationIndex = data.conversation_index;
+            
+//             // 2. Immediately update the sidebar using the data we JUST got
+//             renderSidebarItems(data.all_conversations);
+            
+//             console.log("Sidebar updated instantly with new chat.");
+//         }
+//     })
+//     .catch(err => console.error("Error:", err));
+// }
+
+
+
+// function renderSidebarItems(conversations) {
+//     const historyList = document.getElementById('chatHistoryList');
+//     if (!historyList) return;
+
+//     historyList.innerHTML = ''; 
+
+//     conversations.forEach((conv, index) => {
+//         const item = document.createElement('div');
+//         const isActive = (parseInt(index) === parseInt(currentConversationIndex));
+//         item.className = `history-item ${isActive ? 'active' : ''}`;
+        
+//         // PRIORITY: 1. Generated Title, 2. First Query, 3. Default
+//         const displayTitle = conv.title || (conv.queries[0] ? conv.queries[0].substring(0, 30) + "..." : "New Chat");
+        
+//         item.innerHTML = `
+//             <div class="history-info">
+//                 <div class="history-title" title="${displayTitle}">${displayTitle}</div>
+//                 <div class="history-meta">${conv.timestamp} • ${conv.queries.length} msgs</div>
+//             </div>
+//         `;
+        
+//         item.onclick = () => loadConversation(index);
+//         historyList.appendChild(item);
+//     });
+// }
+
+
+function renderSidebarItems(conversations) {
+    const list = document.getElementById('chatHistoryList');
+    if (!list) return;
+
+    if (!conversations || conversations.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <p>No conversations yet</p>
+            </div>`;
+        return;
+    }
+
+    // reverse for display (newest top)
+    const reversedHistory = [...conversations].reverse();
+
+    list.innerHTML = reversedHistory.map((item, revIdx) => {
+        const originalIdx = conversations.length - 1 - revIdx;
+        const isActive = (parseInt(originalIdx) === parseInt(currentConversationIndex));
+        
+        // PRIORITY LOGIC: Use LLM Title if it exists, otherwise first query, otherwise "New Chat"
+        let displayTitle = "New Chat";
+        if (item.title) {
+            displayTitle = item.title;
+        } else if (item.queries && item.queries.length > 0) {
+            displayTitle = item.queries[0].substring(0, 50) + (item.queries[0].length > 50 ? '...' : '');
+        }
+
+        return `
+            <div class="history-item ${isActive ? 'active' : ''}" onclick="loadConversation('${originalIdx}')">
+                <div class="history-content">
+                    <div class="history-time">${item.timestamp}</div>
+                    <div class="history-text" title="${displayTitle}">${displayTitle}</div>
+                    <div class="history-meta">
+                        <span class="history-count">${item.queries.length} messages</span>
+                    </div>
+                </div>
+                <button class="delete-btn" onclick="deleteChat(event, '${originalIdx}')">×</button>
+            </div>
+        `;
+    }).join('');
+}
+
+async function deleteChat(event, index) {
+    // Prevent the click from opening the chat
+    event.stopPropagation();
+
+    if (!confirm("Are you sure you want to delete this conversation?")) return;
+
+    try {
+        const response = await fetch('/delete-conversation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ index: index })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // If we deleted the chat we were currently looking at, reset the view
+            if (index === currentConversationIndex) {
+                currentConversationIndex = null;
+                document.getElementById('outputSection').innerHTML = ''; // Clear chat window
+            } else if (index < currentConversationIndex) {
+                // Adjust index if we deleted something above the current chat
+                currentConversationIndex--;
+            }
+            
+            // Refresh sidebar with the new list returned by the server
+            renderSidebarItems(data.all_conversations);
+        }
+    } catch (error) {
+        console.error("Delete failed:", error);
+    }
+}
+
+// This function is still used for page loads
+function updateSidebar() {
+    fetch('/get-conversations?t=' + Date.now())
+        .then(res => res.json())
+        .then(conversations => {
+            renderSidebarItems(conversations);
+        });
+}
+        
+        // Create AI message div for streaming
+        function createAIMessageDiv() {
+            const outputSection = document.getElementById('outputSection');
+            const loadingMsg = document.getElementById('loadingMessage');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai-message';
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar ai-avatar">🤖</div>
+                    <div class="message-text"></div>
+                </div>
+            `;
+            
+            outputSection.insertBefore(messageDiv, loadingMsg);
+            outputSection.scrollTop = outputSection.scrollHeight;
+            
+            return messageDiv;
+        }
+        
+        // Update AI message during streaming
+        function updateAIMessage(messageDiv, text) {
+            const textDiv = messageDiv.querySelector('.message-text');
+            textDiv.textContent = text;
+            
+            const outputSection = document.getElementById('outputSection');
+            outputSection.scrollTop = outputSection.scrollHeight;
+        }
+
+        // Add user message to chat
+        function addUserMessage(text) {
+            const outputSection = document.getElementById('outputSection');
+            
+            // Remove welcome screen if exists
+            const welcomeScreen = outputSection.querySelector('.welcome-screen');
+            if (welcomeScreen) {
+                welcomeScreen.remove();
+            }
+            
+            // Remove loading message temporarily (we'll add it back after user message)
+            const loadingMsg = document.getElementById('loadingMessage');
+            loadingMsg.remove();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user-message';
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar user-avatar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="message-text">${escapeHtml(text)}</div>
+                </div>
+            `;
+            
+            outputSection.appendChild(messageDiv);
+            
+            // Add loading message back after user message
+            outputSection.appendChild(loadingMsg);
+            
+            outputSection.scrollTop = outputSection.scrollHeight;
+        }
+
+        // Add AI message to chat
+        function addAIMessage(text) {
+            const outputSection = document.getElementById('outputSection');
+            
+            // Remove loading indicator
+            const loadingMsg = document.getElementById('loadingMessage');
+            if (loadingMsg && !loadingMsg.classList.contains('hidden')) {
+                loadingMsg.classList.add('hidden');
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai-message';
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar ai-avatar">🤖</div>
+                    <div class="message-text">${escapeHtml(text)}</div>
+                </div>
+            `;
+            
+            // Insert before loading message (so loading stays at end for next query)
+            outputSection.insertBefore(messageDiv, loadingMsg);
+            outputSection.scrollTop = outputSection.scrollHeight;
+        }
+
+        // Remove last user message (on error)
+        function removeLastUserMessage() {
+            const outputSection = document.getElementById('outputSection');
+            const messages = outputSection.querySelectorAll('.message.user-message:not(#loadingMessage)');
+            const lastUserMsg = messages[messages.length - 1];
+            if (lastUserMsg) {
+                lastUserMsg.remove();
+            }
+        }
+
+        // Update sidebar
+        
+
+        // Quick query
+        function setQuickQuery(type) {
+            fetch('/quick-query/' + type, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('queryInput').value = data.query;
+                document.getElementById('queryInput').focus();
+            });
+        }
+
+        // Clear document
+        function clearDocument() {
+            if (confirm('Remove the current document?')) {
+                fetch('/clear-document', {
+                    method: 'POST'
+                })
+                .then(() => {
+                    location.reload();
+                });
+            }
+        }
+
+        // Clear history
+        function clearHistory() {
+            if (confirm('Clear all chat history?')) {
+                fetch('/clear-history', {
+                    method: 'POST'
+                })
+                .then(() => {
+                    // Clear the UI
+                    const historyList = document.querySelector('.history-list');
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <p>No conversations yet</p>
+                        </div>
+                    `;
+                    
+                    // Clear output section
+                    const outputSection = document.getElementById('outputSection');
+                    outputSection.innerHTML = `
+                        <div class="welcome-screen">
+                            <div class="welcome-icon">🤖</div>
+                            <h2>Welcome to Document Analyzer</h2>
+                            <p>Upload a document and start asking questions</p>
+                            
+                            <div class="suggestion-chips">
+                                <button class="chip" onclick="setQuickQuery('format')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 11 12 14 22 4"></polyline>
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                    </svg>
+                                    Check Format
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('overview')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                    Find Overview
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('diagrams')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                                    </svg>
+                                    Find Diagrams
+                                </button>
+                                <button class="chip" onclick="setQuickQuery('summarize')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    </svg>
+                                    Summarize
+                                </button>
+                            </div>
+                        </div>
+                        <div class="message ai-message hidden" id="loadingMessage">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">🤖</div>
+                                <div class="message-text">
+                                    <div class="typing-indicator">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    currentConversationIndex = null;
+                });
+            }
+        }
+
+        // Load conversation from history
+        function loadConversation(index) {
+            window.location.href = '/?conversation=' + index;
+        }
+
+        // Handle key press
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                analyzeDocument();
+            }
+        }
+
+        // Show loading
+        function showLoading() {
+            const loadingMsg = document.getElementById('loadingMessage');
+            loadingMsg.classList.remove('hidden');
+            
+            const outputSection = document.getElementById('outputSection');
+            outputSection.scrollTop = outputSection.scrollHeight;
+        }
+
+        // Hide loading
+        function hideLoading() {
+            const loadingMsg = document.getElementById('loadingMessage');
+            loadingMsg.classList.add('hidden');
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Auto-scroll to bottom on load
+        window.addEventListener('load', () => {
+            const outputSection = document.getElementById('outputSection');
+            if (outputSection) {
+                outputSection.scrollTop = outputSection.scrollHeight;
+            }
+            
+            // Get current conversation index from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const convIndex = urlParams.get('conversation');
+            if (convIndex !== null) {
+                currentConversationIndex = parseInt(convIndex);
+            }
+        });
+        function newChat() {
+    fetch('/new-chat', { method: 'POST' })
+        .then(() => location.href = '/');
+}
+
+
+
+    </script>
+</body>
+</html>
